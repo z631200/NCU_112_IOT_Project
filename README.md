@@ -6,5 +6,5 @@ IOT_Project_demo.py is the demo version of IOT_Project.py
 
 
 
-I would like to express my sincere gratitude to Peusudocode(https://github.com/Peusudocode) for help
+I would like to express my sincere gratitude to Peusudocode(https://github.com/Peusudocode) for his assisstance
 
