@@ -22,10 +22,12 @@ RELAY_PIN = 12
 PIR_IN_PIN = 11
 PIR_OUT_PIN = 13
 NOTPASS_PIN = 36
+REMIND_PIN = 37
 GPIO.setup(RELAY_PIN, GPIO.OUT, initial=GPIO.HIGH)
 GPIO.setup(PIR_IN_PIN, GPIO.IN) #Read output from PIR motion sensor
 GPIO.setup(PIR_OUT_PIN, GPIO.OUT)
 GPIO.setup(NOTPASS_PIN, GPIO.OUT)
+GPIO.setup(REMIND_PIN, GPIO.OUT)
 
 camera = PiCamera()
 camera.hflip = 0
@@ -89,6 +91,7 @@ handler = WebhookHandler('Channel_secret')
 def image_recognition():
     camera.zoom = (0.3,0,0.5,0.6)
     camera.capture('./image_phone.jpg')
+    #todo revise 256*256
     input_image_path = './image_phone.jpg'
     input_image = Image.open(input_image_path).convert("RGB")
     input_tensor = transform(input_image).unsqueeze(0)  # Add batch dimension
@@ -149,7 +152,7 @@ def function_a(event,input_2):
     check_num = 0
     alarm_time_t = datetime.datetime.strptime(input_2, "%H:%M")
 #     alarm_time_2_hours_before = alarm_time - datetime.timedelta(hours=2)
-    alarm_time_2_hours_before_t = alarm_time_t - datetime.timedelta(minutes=2)
+    alarm_time_2_hours_before_t = alarm_time_t - datetime.timedelta(minutes=3)
     alarm_time = alarm_time_t.strftime("%H:%M")
     alarm_time_2_hours_before = alarm_time_2_hours_before_t.strftime("%H:%M")
     print(alarm_time_2_hours_before)
@@ -174,7 +177,7 @@ def function_a(event,input_2):
         
         predicted_class, probabilities = image_recognition()
         print(f"Predicted class: {predicted_class}, Probability: {probabilities:.4f}")
-        if(probabilities>0.998 and predicted_class == 0):
+        if(probabilities>0.999 and predicted_class == 0):
             print("battery full, Relay is off")
             GPIO.output(RELAY_PIN, GPIO.HIGH)
             break
@@ -198,34 +201,48 @@ def function_a(event,input_2):
 
 def function_b(event,input_2):
     event_user_id = event.source.user_id
-#     sleep(30)
-    sleep(5)
     cicle_time = int(input_2)
     print("time start")
     print("Relay is on")
     GPIO.output(RELAY_PIN, GPIO.LOW)
-    GPIO.output(NOTPASS_PIN, 1)
-
+    GPIO.output(NOTPASS_PIN, 0)
+    GPIO.output(REMIND_PIN, 0)
   
     for i in range(cicle_time):
+        predicted_class, probabilities = image_recognition()
+        print(f"Predicted class: {predicted_class}, Probability: {probabilities:.4f}")
+        if(probabilities>0.999 and predicted_class == 0):
+            print("battery full, Relay is off")
+            GPIO.output(RELAY_PIN, GPIO.HIGH)
+        print('time to work')
+        line_bot_api.push_message(event_user_id,TextSendMessage(text='Time to work'))
+        for i in range(5):
+            GPIO.output(REMIND_PIN, 1)
+            GPIO.output(NOTPASS_PIN, 1)
+            sleep(0.5)
+            GPIO.output(REMIND_PIN, 0)
+            GPIO.output(NOTPASS_PIN, 0)
+            sleep(0.5)    
         GPIO.output(NOTPASS_PIN, 1)
 #         for i in range(25*60):
-        for i in range(1*60):
+        for i in range(1*20):#run 30s
             i=GPIO.input(11)
             if i==0: #When output from motion sensor is LOW
-                print("No intruders",i)
+                print("No intruders")
                 GPIO.output(PIR_OUT_PIN, 0) #Turn OFF LED 
             elif i==1: #When output from motion sensor is HIGH
-                print("Intruder detected",i)
+                print("Intruder detected")
                 GPIO.output(PIR_OUT_PIN, 1) #Turn ON LED
                 line_bot_api.push_message(event_user_id,TextSendMessage(text='Intruder detected'))
                 capture_upload_image(event)
             time.sleep(1)
         GPIO.output(NOTPASS_PIN, 0)
+        print('time to rest')
 #         time.sleep(5*60)
-        time.sleep(1*60)
-
+        time.sleep(1*10)#sleep 30s
+        
     print('finish b')
+    print("Relay is off") 
     GPIO.output(RELAY_PIN, GPIO.HIGH) 
     reply_text = 'finish b'
     line_reply_message(event,reply_text)
@@ -247,13 +264,14 @@ def function_c1(event,input_2):#at the time
         
         i=GPIO.input(11)
         if i==0: #When output from motion sensor is LOW
-            print("No intruders",i)
+            print("No intruders")
             GPIO.output(PIR_OUT_PIN, 0) #Turn OFF LED 
         elif i==1: #When output from motion sensor is HIGH
-            print("Intruder detected",i)
+            print("Intruder detected")
+            GPIO.output(PIR_OUT_PIN, 1) #Turn ON LED
             line_bot_api.push_message(event_user_id,TextSendMessage(text='Intruder detected'))
             capture_upload_image(event)
-            GPIO.output(PIR_OUT_PIN, 1) #Turn ON LED
+            
             
 #         if(count_time%300 == 0 and count_time != 0):
 #             if(count_time%1200 == 0):
@@ -265,7 +283,7 @@ def function_c1(event,input_2):#at the time
         if(count_time%20 == 0 and count_time != 0):
             predicted_class, probabilities = image_recognition()
             print(f"Predicted class: {predicted_class}, Probability: {probabilities:.4f}")
-            if(probabilities>0.998 and predicted_class == 0):
+            if(probabilities>0.999 and predicted_class == 0):
                 GPIO.output(RELAY_PIN, GPIO.HIGH)
                 print('relay off')
             elif count_time >=90*60:
@@ -297,13 +315,14 @@ def function_c2(event,input_2):#remain time
         GPIO.output(NOTPASS_PIN, 1)
         i=GPIO.input(11)
         if i==0: #When output from motion sensor is LOW
-            print("No intruders",i)
+            print("No intruders")
             GPIO.output(PIR_OUT_PIN, 0) #Turn OFF LED 
         elif i==1: #When output from motion sensor is HIGH
-            print("Intruder detected",i)
+            print("Intruder detected")
+            GPIO.output(PIR_OUT_PIN, 1) #Turn ON LED
             line_bot_api.push_message(event_user_id,TextSendMessage(text='Intruder detected'))
             capture_upload_image(event)
-            GPIO.output(PIR_OUT_PIN, 1) #Turn ON LED
+            
         
 #         if(count_time%300 == 0 and count_time != 0):
         if(count_time%20 == 0 and count_time != 0):
@@ -314,7 +333,7 @@ def function_c2(event,input_2):#remain time
 #                 sleep(15)
             predicted_class, probabilities = image_recognition()
             print(f"Predicted class: {predicted_class}, Probability: {probabilities:.4f}")
-            if(probabilities>0.998 and predicted_class == 0):
+            if(probabilities>0.999 and predicted_class == 0):
                 GPIO.output(RELAY_PIN, GPIO.HIGH)
                 print('relay off')
             elif count_time >=90*60:
