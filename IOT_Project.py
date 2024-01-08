@@ -82,8 +82,8 @@ model.eval()
 app = Flask(__name__)
 
 # LINE 聊天機器人的基本資料
-line_bot_api = LineBotApi('RD3mDhoB3i1l0u/zVC/2UM5YaQRGVfZf1597ff/wlVBRCnmZYfzJqbCtr/C6n7yskxoelHx/Vh4j50CEehmhNSk6DKaFkWwNwOyWf/ZJq8LtFgFD62j6ji/JKIRadOlTZdBu3PvjQXF+QZ3l0Xhy7gdB04t89/1O/w1cDnyilFU=')
-handler = WebhookHandler('0039418607e5d52d9a2a8ebf0dd59fe5')
+line_bot_api = LineBotApi('Channel_access_token')
+handler = WebhookHandler('Channel_secret')
 
 #-----------------
 def image_recognition():
