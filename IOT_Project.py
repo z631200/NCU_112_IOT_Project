@@ -134,7 +134,7 @@ def capture_upload_image(event):
     event_user_id = event.source.user_id
     camera.zoom = (0,0,1,1)
     camera.capture('./image_phone.jpg')
-    CLIENT_ID = "d42d9441d1ea8fd"
+    CLIENT_ID = "YOUR_imgur_Client_ID"
     PATH = "./image_phone.jpg" #A Filepath to an image on your computer"
     title = "Uploaded with PyImgur"
     im = pyimgur.Imgur(CLIENT_ID)
